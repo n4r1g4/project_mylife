@@ -1,0 +1,134 @@
+extends CharacterBody2D
+
+@export var speed: float = 100
+@export var ray_ball_scene: PackedScene  # Referência para a cena da bola de raio
+var direction = Vector2.ZERO
+var last_direction: String = "down"  # Mantém a última direção de movimento
+@onready var animation := $anim as AnimatedSprite2D  # Referência ao AnimatedSprite2D
+@onready var shoot_timer = $shoot_timer
+
+# Referências aos Markers2D para as 8 direções
+@onready var marker_up = $up
+@onready var marker_up_left = $up_left
+@onready var marker_up_right = $up_right
+@onready var marker_left = $left
+@onready var marker_right = $right
+@onready var marker_down = $down
+@onready var marker_down_left = $down_left
+@onready var marker_down_right = $down_right
+
+
+func _process(delta: float) -> void:
+	velocity = Vector2.ZERO  # Reseta a velocidade
+	direction = Vector2.ZERO  # Reseta a direção
+
+	# Movimentação com as teclas
+	if Input.is_action_pressed("ui_right"):
+		velocity.x += 1
+		last_direction = "right"  # Atualiza a última direção
+	elif Input.is_action_pressed("ui_left"):
+		velocity.x -= 1
+		last_direction = "left"  # Atualiza a última direção
+
+	if Input.is_action_pressed("ui_down"):
+		velocity.y += 1
+		last_direction = "down"  # Atualiza a última direção
+	elif Input.is_action_pressed("ui_up"):
+		velocity.y -= 1
+		last_direction = "up"  # Atualiza a última direção
+
+	# Normaliza o vetor para não andar mais rápido na diagonal
+	if velocity != Vector2.ZERO:
+		velocity = velocity.normalized() * speed
+
+	# Aplica o movimento
+	move_and_slide()
+
+	# Chama a função para definir a animação correta
+	update_animation()
+
+	# Detecta o clique do botão esquerdo do mouse para lançar o raio
+	if Input.is_action_just_pressed("mouse_left"):
+		if shoot_timer.is_stopped():
+			shoot_ray()
+
+# Função para animar o personagem com base na direção
+func update_animation() -> void:
+	if velocity.x > 0 and velocity.y < 0:  # Direita e cima
+		animation.play("walk_up_right")
+		last_direction = "up_right"  # Atualiza a última direção
+	elif velocity.x < 0 and velocity.y < 0:  # Esquerda e cima
+		animation.play("walk_up_left")
+		last_direction = "up_left"  # Atualiza a última direção
+	elif velocity.x > 0 and velocity.y > 0:  # Direita e baixo
+		animation.play("walk_down_right")
+		last_direction = "down_right"  # Atualiza a última direção
+	elif velocity.x < 0 and velocity.y > 0:  # Esquerda e baixo
+		animation.play("walk_down_left")
+		last_direction = "down_left"  # Atualiza a última direção
+	elif velocity.x > 0:  # Apenas direita
+		animation.play("walk_right")
+		last_direction = "right"  # Atualiza a última direção
+	elif velocity.x < 0:  # Apenas esquerda
+		animation.play("walk_left")
+		last_direction = "left"  # Atualiza a última direção
+	elif velocity.y > 0:  # Apenas baixo
+		animation.play("walk_down")
+		last_direction = "down"  # Atualiza a última direção
+	elif velocity.y < 0:  # Apenas cima
+		animation.play("walk_up")
+		last_direction = "up"  # Atualiza a última direção
+	else:
+		# Idle para cada direção, incluindo diagonais
+		match animation.animation:
+			"walk_right":
+				animation.play("idle_right")
+			"walk_left":
+				animation.play("idle_left")
+			"walk_down":
+				animation.play("idle_down")
+			"walk_up":
+				animation.play("idle_up")
+			"walk_down_right":
+				animation.play("idle_down_right")
+			"walk_down_left":
+				animation.play("idle_down_left")
+			"walk_up_right":
+				animation.play("idle_up_right")
+			"walk_up_left":
+				animation.play("idle_up_left")
+
+# Função para lançar o raio
+func shoot_ray() -> void:
+	var ray_ball_instance = ray_ball_scene.instantiate()  # Cria uma instância da bola de raio apenas no momento do clique
+	
+	# Define a posição inicial da bola de acordo com a última direção de movimento
+	var launch_position = Vector2.ZERO
+	match last_direction:
+		"up":
+			launch_position = marker_up.global_position
+		"up_left":
+			launch_position = marker_up_left.global_position
+		"up_right":
+			launch_position = marker_up_right.global_position
+		"left":
+			launch_position = marker_left.global_position
+		"right":
+			launch_position = marker_right.global_position
+		"down":
+			launch_position = marker_down.global_position
+		"down_left":
+			launch_position = marker_down_left.global_position
+		"down_right":
+			launch_position = marker_down_right.global_position	
+			
+	# Define a posição inicial da bola de raio
+	ray_ball_instance.position = launch_position
+	get_parent().add_child(ray_ball_instance)
+
+	# Define a direção do mouse para o projétil
+	var mouse_position = get_global_mouse_position()
+	var direction_to_mouse = (mouse_position - ray_ball_instance.position).normalized()
+
+	# Manda a bola de raio para a direção do mouse
+	ray_ball_instance.shoot_in_direction(direction_to_mouse)
