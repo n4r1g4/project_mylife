@@ -1,0 +1,16 @@
+extends Area2D
+
+@export var speed: float = 400.0
+var direction: Vector2 = Vector2.ZERO
+
+func _process(delta: float) -> void:
+	# Move o projétil na direção definida
+	position += direction * speed * delta
+
+# Define a direção do projétil
+func shoot_in_direction(dir: Vector2) -> void:
+	direction = dir.normalized()
+
+
+func _on_visible_on_screen_enabler_2d_screen_exited() -> void:
+	queue_free()
