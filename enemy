@@ -1,0 +1,29 @@
+extends CharacterBody2D
+
+@export var speed: float = 100.0
+var move_direction = Vector2.ZERO
+var time_to_change_direction = 2.0  # Tempo entre mudanças de direção
+@onready var animation := $anim_enemy as AnimatedSprite2D 
+
+# Função que atualiza a cada frame
+func _process(delta: float) -> void:
+	# Reduz o tempo até a próxima mudança de direção
+	time_to_change_direction -= delta
+	
+	# Quando o tempo chega a zero, escolhe uma nova direção aleatória
+	if time_to_change_direction <= 0:
+		change_direction()
+	
+	# Aplica o movimento ao inimigo
+	velocity = move_direction * speed  # Define a velocidade do inimigo
+	move_and_slide()  # Move o inimigo com base na velocidade
+
+# Função para mudar a direção do inimigo aleatoriamente
+func change_direction() -> void:
+	move_direction.x = randf_range(-1, 1)
+	move_direction.y = randf_range(-1, 1)
+	move_direction = move_direction.normalized()
+	
+	# Reseta o tempo até a próxima mudança de direção
+	time_to_change_direction = randf_range(1, 3)
+	
